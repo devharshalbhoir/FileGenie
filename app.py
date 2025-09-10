@@ -3,9 +3,13 @@ import asyncio
 from flask import Flask, render_template, request, flash, send_file, redirect, url_for
 from datetime import datetime
 
+from scripts.compress_videos_in_folder import compress_videos_in_folder
+from scripts.detect_and_move_corrupt_files import detect_and_move_corrupt_files
 from scripts.segregate_by_year import segregate_files_by_year
 from scripts.segregate_by_size import segregate_files_by_size
 from scripts.move_long_videos import find_and_move_long_videos
+from scripts.segregate_by_resolution import segregate_files_by_resolution
+from scripts.segregate_by_height_res import segregate_files_by_height
 from scripts.rename_files import rename_files
 from scripts.smart_rename import rename_files_in_folder
 
@@ -13,6 +17,7 @@ app = Flask(__name__)
 app.secret_key = 'abcde'
 LOG_DIR = os.path.join(os.getcwd(), 'logs')
 os.makedirs(LOG_DIR, exist_ok=True)
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -34,8 +39,55 @@ def index():
                 try:
                     log_file = os.path.join(LOG_DIR, f'year_log_{timestamp}.txt')
                     result = asyncio.run(segregate_files_by_year(folder_path, dry_run=is_dry_run, log_path=log_file))
-                    flash(f"✅ Year-based segregation done. {result['moved_total']} moved, {result['skipped_total']} skipped.", 'success')
+                    flash(
+                        f"✅ Year-based segregation done. {result['moved_total']} moved, {result['skipped_total']} skipped.",
+                        'success')
                     summary_data['segregate_by_year'] = {'log_file': os.path.basename(log_file)}
+                except Exception as e:
+                    flash(f'❌ Error in year segregation: {e}', 'danger')
+
+            if 'segregate_files_by_resolution' in operations:
+                try:
+                    log_file = os.path.join(LOG_DIR, f'year_log_{timestamp}.txt')
+                    result = asyncio.run(
+                        segregate_files_by_resolution(folder_path, dry_run=is_dry_run, log_path=log_file))
+                    flash(
+                        f"✅ Resolution-based segregation done. {result['moved_total']} moved, {result['skipped_total']} skipped.",
+                        'success')
+                    summary_data['segregate_files_by_resolution'] = {'log_file': os.path.basename(log_file)}
+                except Exception as e:
+                    flash(f'❌ Error in year segregation: {e}', 'danger')
+
+            if 'segregate_files_by_height' in operations:
+                try:
+                    log_file = os.path.join(LOG_DIR, f'year_log_{timestamp}.txt')
+                    result = asyncio.run(segregate_files_by_height(folder_path, dry_run=is_dry_run, log_path=log_file))
+                    flash(
+                        f"✅ Height Resolution-based segregation done. {result['moved_total']} moved, {result['skipped_total']} skipped.",
+                        'success')
+                    summary_data['segregate_files_by_height'] = {'log_file': os.path.basename(log_file)}
+                except Exception as e:
+                    flash(f'❌ Error in year segregation: {e}', 'danger')
+
+            if 'compress_videos_in_folder' in operations:
+                try:
+                    log_file = os.path.join(LOG_DIR, f'year_log_{timestamp}.txt')
+                    result = asyncio.run(compress_videos_in_folder(folder_path))
+                    flash(
+                        f"✅ Compressed videos done. {result['moved_total']} moved, {result['skipped_total']} skipped.",
+                        'success')
+                    summary_data['compress_videos_in_folder'] = {'log_file': os.path.basename(log_file)}
+                except Exception as e:
+                    flash(f'❌ Error in year segregation: {e}', 'danger')
+
+            if 'detect_and_move_corrupt_files' in operations:
+                try:
+                    log_file = os.path.join(LOG_DIR, f'year_log_{timestamp}.txt')
+                    result = asyncio.run(detect_and_move_corrupt_files(folder_path))
+                    flash(
+                        f"✅ Detect and move corrupt files done. {result['moved_total']} moved, {result['skipped_total']} skipped.",
+                        'success')
+                    summary_data['detect_and_move_corrupt_files'] = {'log_file': os.path.basename(log_file)}
                 except Exception as e:
                     flash(f'❌ Error in year segregation: {e}', 'danger')
 
