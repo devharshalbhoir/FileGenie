@@ -5,6 +5,7 @@ from datetime import datetime
 
 from scripts.compress_videos_in_folder import compress_videos_in_folder
 from scripts.detect_and_move_corrupt_files import detect_and_move_corrupt_files
+from scripts.search_movie_on_imdb import process_movies
 from scripts.segregate_by_year import segregate_files_by_year
 from scripts.segregate_by_size import segregate_files_by_size
 from scripts.move_long_videos import find_and_move_long_videos
@@ -124,6 +125,15 @@ def index():
                     rename_files_in_folder(folder_path, dry_run=is_dry_run, log_path=log_file)
                     flash('✅ Smart renaming completed.', 'success')
                     summary_data['smart_rename'] = {'log_file': os.path.basename(log_file)}
+                except Exception as e:
+                    flash(f'❌ Error during smart renaming: {e}', 'danger')
+
+            if 'process_movies' in operations:
+                try:
+                    log_file = os.path.join(LOG_DIR, f'smart_rename_log_{timestamp}.txt')
+                    process_movies(folder_path)
+                    flash('✅ Smart renaming completed.', 'success')
+                    summary_data['process_movies'] = {'log_file': os.path.basename(log_file)}
                 except Exception as e:
                     flash(f'❌ Error during smart renaming: {e}', 'danger')
 
