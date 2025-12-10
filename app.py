@@ -13,6 +13,7 @@ from scripts.segregate_by_resolution import segregate_files_by_resolution
 from scripts.segregate_by_height_res import segregate_files_by_height
 from scripts.rename_files import rename_files
 from scripts.smart_rename import rename_files_in_folder
+from scripts.sort_move_files import sort_move_files
 
 app = Flask(__name__)
 app.secret_key = 'abcde'
@@ -136,6 +137,30 @@ def index():
                     summary_data['process_movies'] = {'log_file': os.path.basename(log_file)}
                 except Exception as e:
                     flash(f'❌ Error during smart renaming: {e}', 'danger')
+
+            if 'sort_move_files' in operations:
+                try:
+                    log_file = os.path.join(LOG_DIR, f'sort_move_log_{timestamp}.txt')
+                    destination_mode = request.form.get('destination_mode', '2')
+                    custom_dest_path = request.form.get('custom_dest_path', '')
+                    
+                    # For mode 3, validate custom destination path
+                    dest_path = custom_dest_path if destination_mode == '3' else None
+                    
+                    result = sort_move_files(
+                        folder_path, 
+                        destination_mode, 
+                        dest_path=dest_path,
+                        dry_run=is_dry_run, 
+                        log_path=log_file
+                    )
+                    flash(
+                        f"✅ Sort & Move by extension completed. {result['moved_total']} moved, {result['skipped_total']} skipped.",
+                        'success'
+                    )
+                    summary_data['sort_move_files'] = {'log_file': os.path.basename(log_file)}
+                except Exception as e:
+                    flash(f'❌ Error in sort & move files: {e}', 'danger')
 
     return render_template('index.html', summary_data=summary_data)
 
