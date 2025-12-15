@@ -16,6 +16,7 @@ from scripts.segregate_by_resolution import segregate_files_by_resolution
 from scripts.segregate_by_height_res import segregate_files_by_height
 from scripts.rename_files import rename_files
 from scripts.smart_rename import rename_files_in_folder
+from scripts.image_date_modifier import modify_image_dates
 from scripts.sort_move_files import sort_move_files
 
 app = Flask(__name__)
@@ -175,6 +176,22 @@ def index():
                     summary_data['sort_move_files'] = {'log_file': os.path.basename(log_file)}
                 except Exception as e:
                     flash(f'❌ Error in sort & move files: {e}', 'danger')
+
+            if 'modify_image_dates' in operations:
+                try:
+                    target_date = request.form.get('target_date')
+                    if not target_date:
+                        flash("❌ Please select a target date for image modification.", "warning")
+                    else:
+                        log_file = os.path.join(LOG_DIR, f'date_mod_log_{timestamp}.txt')
+                        result = asyncio.run(modify_image_dates(folder_path, target_date, dry_run=is_dry_run, log_path=log_file))
+                        flash(
+                            f"✅ Date modification done. {result['moved_total']} processed, {result['skipped_total']} failed.",
+                            'success'
+                        )
+                        summary_data['modify_image_dates'] = {'log_file': os.path.basename(log_file)}
+                except Exception as e:
+                    flash(f'❌ Error in date modification: {e}', 'danger')
 
     return render_template('index.html', summary_data=summary_data)
 

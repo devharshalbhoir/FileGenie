@@ -339,6 +339,16 @@
                   id="compress_images">
                 <label class="form-check-label" for="compress_images">Compress Images</label>
               </div>
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="modify_image_dates"
+                  id="modify_image_dates" onclick="toggleDateInput()">
+                <label class="form-check-label" for="modify_image_dates">Modify Image Dates</label>
+              </div>
+              <div id="date_input_container" class="sub-options" style="display: none;">
+                <label class="form-label text-muted small mb-2">TARGET DATE:</label>
+                <input type="datetime-local" class="form-control form-control-sm" name="target_date" id="target_date">
+              </div>
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="operations" value="compress_videos_in_folder"
                   id="compress_videos_in_folder">
@@ -444,6 +454,16 @@
         setTimeout(() => document.getElementById('custom_dest_path').focus(), 100);
       } else {
         customDestContainer.style.display = 'none';
+      }
+    }
+
+    function toggleDateInput() {
+      const checkbox = document.getElementById('modify_image_dates');
+      const container = document.getElementById('date_input_container');
+      if (checkbox.checked) {
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
       }
     }
 
