@@ -1,9 +1,12 @@
 import os
+import sys
+import subprocess
 import asyncio
 from flask import Flask, render_template, request, flash, send_file, redirect, url_for
 from datetime import datetime
 
 from scripts.compress_videos_in_folder import compress_videos_in_folder
+from scripts.compress_images import compress_images_in_folder
 from scripts.detect_and_move_corrupt_files import detect_and_move_corrupt_files
 from scripts.search_movie_on_imdb import process_movies
 from scripts.segregate_by_year import segregate_files_by_year
@@ -81,6 +84,17 @@ def index():
                     summary_data['compress_videos_in_folder'] = {'log_file': os.path.basename(log_file)}
                 except Exception as e:
                     flash(f'❌ Error in year segregation: {e}', 'danger')
+
+            if 'compress_images' in operations:
+                try:
+                    log_file = os.path.join(LOG_DIR, f'compress_images_log_{timestamp}.txt')
+                    result = asyncio.run(compress_images_in_folder(folder_path, dry_run=is_dry_run, log_path=log_file))
+                    flash(
+                        f"✅ Image compression done. {result['moved_total']} processed, {result['skipped_total']} failed.",
+                        'success')
+                    summary_data['compress_images'] = {'log_file': os.path.basename(log_file)}
+                except Exception as e:
+                    flash(f'❌ Error in image compression: {e}', 'danger')
 
             if 'detect_and_move_corrupt_files' in operations:
                 try:
@@ -163,6 +177,17 @@ def index():
                     flash(f'❌ Error in sort & move files: {e}', 'danger')
 
     return render_template('index.html', summary_data=summary_data)
+
+
+@app.route('/select_folder')
+def select_folder():
+    try:
+        # Open directory dialog using a subprocess to avoid main thread issues
+        cmd = [sys.executable, "-c", "import tkinter as tk; from tkinter import filedialog; root = tk.Tk(); root.withdraw(); print(filedialog.askdirectory())"]
+        path = subprocess.check_output(cmd).decode('utf-8').strip()
+        return {"path": path}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @app.route('/download_log/<logname>')

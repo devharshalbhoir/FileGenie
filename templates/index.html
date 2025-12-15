@@ -254,8 +254,10 @@
         <label for="folder_path" class="form-label mb-2 text-uppercase text-muted"
           style="font-size: 0.8rem; letter-spacing: 1px; font-weight: 600;">Target Directory</label>
         <div class="input-group">
-          <span class="input-group-text" style="background-color: #1a232b; border-color: #4A5663; color: #a0aab5;"><i
-              class="fa-regular fa-folder-open"></i></span>
+          <span class="input-group-text" id="browse_btn"
+            style="background-color: #1a232b; border-color: #4A5663; color: #a0aab5; cursor: pointer;">
+            <i class="fa-regular fa-folder-open"></i>
+          </span>
           <input type="text" class="form-control form-control-lg" id="folder_path" name="folder_path"
             placeholder="C:\Users\Name\Downloads" required>
         </div>
@@ -328,10 +330,15 @@
         <div class="col-md-4">
           <div class="feature-card">
             <div class="card-header-custom">
-              <i class="fa-solid fa-video card-header-icon"></i>
-              <h3 class="card-title">Video Tools</h3>
+              <i class="fa-solid fa-photo-film card-header-icon"></i>
+              <h3 class="card-title">Media Tools</h3>
             </div>
             <div class="card-body-custom">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="compress_images"
+                  id="compress_images">
+                <label class="form-check-label" for="compress_images">Compress Images</label>
+              </div>
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="operations" value="compress_videos_in_folder"
                   id="compress_videos_in_folder">
@@ -439,6 +446,17 @@
         customDestContainer.style.display = 'none';
       }
     }
+
+    document.getElementById('browse_btn').addEventListener('click', function () {
+      fetch('/select_folder')
+        .then(response => response.json())
+        .then(data => {
+          if (data.path) {
+            document.getElementById('folder_path').value = data.path;
+          }
+        })
+        .catch(error => console.error('Error selecting folder:', error));
+    });
   </script>
 </body>
 
