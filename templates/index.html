@@ -4,164 +4,695 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>File Utility Dashboard</title>
+  <title>FileGenie Dashboard</title>
+  <!-- Favicon -->
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧞‍♂️</text></svg>">
+  <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome for Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
   <style>
-    body {
-      background-color: #1E2A33;
-      color: #fff;
+    :root {
+      --bg-dark: #1E2A33;
+      --card-bg: #2A3642;
+      --accent: #e63964;
+      --accent-hover: #d02752;
+      --text-main: #ffffff;
+      --text-muted: #a0aab5;
+      --border-color: #3B4754;
+      --input-bg: #1a232b;
+      --input-border: #4A5663;
+      --input-focus-bg: #1a232b;
     }
 
-    .form-container {
-      max-width: 500px;
-      margin: 80px auto;
-      padding: 40px;
-      background-color: #1B252E;
-      border-radius: 10px;
+    [data-theme="light"] {
+      --bg-dark: #f0f2f5;
+      --card-bg: #ffffff;
+      --accent: #e63964;
+      /* Keep accent same or adjust if needed */
+      --accent-hover: #d02752;
+      --text-main: #212529;
+      --text-muted: #6c757d;
+      --border-color: #dee2e6;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+
+    .main-container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    .app-header {
+      margin-bottom: 40px;
+      text-align: center;
+      position: relative;
+    }
+
+    .top-controls {
+      position: absolute;
+      top: 0;
+      right: 0;
+      display: flex;
+      gap: 10px;
+    }
+
+    .top-controls-left {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: flex;
+      gap: 10px;
+    }
+
+    .control-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .control-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .palette-container {
+      position: relative;
+    }
+
+    .color-options {
+      position: absolute;
+      top: 50px;
+      right: 0;
+      background: var(--card-bg);
+      padding: 10px;
+      border-radius: 8px;
+      display: none;
+      /* Hidden by default */
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      width: 120px;
+    }
+
+    .color-swatch {
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.2s;
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.1);
+      border-color: var(--accent);
+    }
+
+    .app-title {
+      font-weight: 600;
+      font-size: 2.5rem;
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+
+    .app-subtitle {
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+
+    /* Card Styling */
+    .feature-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      height: 100%;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      border-color: var(--accent);
+    }
+
+    .card-header-custom {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card-header-icon {
+      color: var(--accent);
+      font-size: 1.25rem;
+    }
+
+    .card-title {
+      margin: 0;
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    .card-body-custom {
+      padding: 20px;
+    }
+
+    /* Path Input */
+    .path-input-group {
+      background-color: var(--card-bg);
+      padding: 30px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
     .form-control {
-      background-color: #fff;
-      color: #000;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 12px;
+      font-size: 1rem;
+      transition: background-color 0.3s, border-color 0.3s, color 0.3s;
     }
 
-    .btn-pink {
-      background-color: #e63964;
-      color: #fff;
+    .form-control:focus {
+      background-color: var(--input-focus-bg);
+      border-color: var(--accent);
+      color: var(--text-main);
+      box-shadow: 0 0 0 0.2rem rgba(230, 57, 100, 0.25);
+    }
+
+    /* Input Group Text (Buttons) */
+    .input-group-text {
+      background-color: var(--input-bg) !important;
+      border-color: var(--border-color) !important;
+      color: var(--text-muted) !important;
+    }
+
+    .input-group-text:hover {
+      color: var(--text-main) !important;
+    }
+
+    /* Checkboxes */
+    .form-check {
+      margin-bottom: 12px;
+      padding-left: 1.8rem;
+    }
+
+    .form-check-input {
+      background-color: var(--input-bg);
+      border-color: var(--input-border);
+      cursor: pointer;
+    }
+
+    .form-check-input:checked {
+      background-color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .form-check-label {
+      color: var(--text-main);
+      cursor: pointer;
+      font-weight: 400;
+      transition: color 0.2s;
+    }
+
+    .form-check:hover .form-check-label {
+      color: var(--accent);
+    }
+
+    /* Sort & Move Sub-options */
+    .sub-options {
+      margin-left: 6px;
+      padding: 15px;
+      margin-top: 10px;
+      border-left: 2px solid var(--accent);
+      background-color: rgba(230, 57, 100, 0.05);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .sub-options label {
+      font-size: 0.9rem;
+    }
+
+    /* Buttons */
+    .btn-action {
+      background: linear-gradient(135deg, var(--accent), #ff6b8b);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 50px;
+      font-weight: 600;
       border: none;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 15px rgba(230, 57, 100, 0.4);
+      transition: all 0.3s ease;
+      width: 100%;
+      margin-top: 20px;
+      font-size: 1.1rem;
     }
 
-    .btn-pink:hover {
-      background-color: #d02752;
+    .btn-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(230, 57, 100, 0.6);
+      color: white;
     }
 
-    .form-check-label,
-    label {
-      color: #ccc;
+    /* Alerts */
+    .alert-success {
+      background-color: rgba(25, 135, 84, 0.2);
+      border-color: #198754;
+      color: #75b798;
     }
 
-    .form-switch .form-check-input {
-      background-color: #6c757d;
+    .alert-danger {
+      background-color: rgba(220, 53, 69, 0.2);
+      border-color: #dc3545;
+      color: #ea868f;
     }
 
-    .alert {
-      color: #000;
+    /* Logs Area */
+    .logs-container {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 40px;
+      border: 1px solid var(--border-color);
     }
 
-    a {
-      color: #e63964;
+    .logs-container h6 {
+      color: var(--accent);
+      margin-bottom: 15px;
+      font-weight: 600;
     }
 
-    .indent-options {
-      margin-left: 30px;
-      margin-top: 10px;
-      padding: 10px;
-      border-left: 2px solid #e63964;
+    .log-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      display: block;
+      padding: 8px 0;
+      border-bottom: 1px solid #3B4754;
+      transition: color 0.2s;
     }
 
-    .custom-dest-input {
-      margin-top: 10px;
+    .log-link:hover {
+      color: white;
+    }
+
+    .log-link i {
+      margin-right: 8px;
+    }
+
+    /* Mobile Responsive Header */
+    @media (max-width: 576px) {
+      .app-header {
+        padding-top: 60px;
+        /* Push title down */
+        margin-bottom: 30px;
+      }
+
+      .app-title {
+        font-size: 2rem;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <div class="form-container">
-    <h2 class="mb-4 text-center">Start Your File Operations</h2>
+  <div class="main-container">
+    <div class="app-header">
+      <div class="top-controls-left">
+        <a class="control-btn" href="/" title="Refresh Session / Clear Cache">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </a>
+      </div>
+      <div class="top-controls">
+        <div class="palette-container">
+          <button class="control-btn" id="palette_btn" title="Change Background Color">
+            <i class="fa-solid fa-palette"></i>
+          </button>
+          <div class="color-options" id="color_options">
+            <!-- Pantone Serenity -->
+            <div class="color-swatch" style="background: #92A8D1;" data-color="#92A8D1" title="Serenity"></div>
+            <!-- Rose Quartz -->
+            <div class="color-swatch" style="background: #F7CAC9;" data-color="#F7CAC9" title="Rose Quartz"></div>
+            <!-- Classic Blue -->
+            <div class="color-swatch" style="background: #0F4C81;" data-color="#0F4C81" title="Classic Blue"></div>
+            <!-- Greenery -->
+            <div class="color-swatch" style="background: #88B04B;" data-color="#88B04B" title="Greenery"></div>
+            <!-- Living Coral -->
+            <div class="color-swatch" style="background: #FF6F61;" data-color="#FF6F61" title="Living Coral"></div>
+            <!-- Classic White -->
+            <div class="color-swatch" style="background: #f0f2f5;" data-color="#f0f2f5" title="Classic Light"></div>
+          </div>
+        </div>
+        <button class="control-btn" id="theme_toggle" title="Toggle Theme">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+        <button class="control-btn" id="view_logs_btn" title="View Session Logs" data-bs-toggle="modal"
+          data-bs-target="#logsModal">
+          <i class="fa-solid fa-list-ul"></i>
+        </button>
+      </div>
+      <h1 class="app-title"><i class="fa-solid fa-wand-magic-sparkles"></i> FileGenie</h1>
+      <p class="app-subtitle">Your intelligent file organization assistant</p>
+    </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
     {% for category, message in messages %}
     <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+      <i
+        class="fa-solid {% if category == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %} me-2"></i>
       {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     {% endfor %}
     {% endif %}
     {% endwith %}
 
     <form method="POST">
-      <div class="mb-3">
-        <label for="folder_path" class="form-label">Folder Path</label>
-        <input type="text" class="form-control" id="folder_path" name="folder_path" placeholder="e.g., H:\Data\Media"
-          required>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Select Operations</label>
-        {% for op in [
-        ('segregate_by_year', 'Segregate by Year'),
-        ('segregate_files_by_resolution', 'Segregate by Resolution'),
-        ('segregate_files_by_height', 'Segregate by Height Res'),
-        ('compress_videos_in_folder', 'Compress videos in folder'),
-        ('detect_and_move_corrupt_files', 'Detect and move corrupt files'),
-        ('segregate_by_size', 'Segregate by Size'),
-        ('move_long_videos', 'Move Long Videos'),
-        ('rename_files', 'Rename Weird Extensions'),
-        ('smart_rename', 'Rename & Clean Filenames'),
-        ('process_movies', 'Process movies')
-        ] %}
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" name="operations" value="{{ op[0] }}" id="{{ op[0] }}">
-          <label class="form-check-label" for="{{ op[0] }}">{{ op[1] }}</label>
-        </div>
-        {% endfor %}
-
-        <!-- Sort & Move Files Checkbox -->
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" name="operations" value="sort_move_files" id="sort_move_files"
-            onclick="toggleSortMoveOptions()">
-          <label class="form-check-label" for="sort_move_files">Sort & Move Files by Extension</label>
-        </div>
-
-        <!-- Sort & Move Options (hidden by default) -->
-        <div id="sort_move_options" class="indent-options" style="display: none;">
-          <label class="form-label">Destination Mode:</label>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="destination_mode" value="1" id="mode_new_folder"
-              onclick="toggleCustomDest()">
-            <label class="form-check-label" for="mode_new_folder">New Timestamped Folder</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="destination_mode" value="2" id="mode_same_folder" checked
-              onclick="toggleCustomDest()">
-            <label class="form-check-label" for="mode_same_folder">Same Folder (In-Place)</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="destination_mode" value="3" id="mode_custom_path"
-              onclick="toggleCustomDest()">
-            <label class="form-check-label" for="mode_custom_path">Custom Destination Path</label>
-          </div>
-          <div id="custom_dest_container" class="custom-dest-input" style="display: none;">
-            <input type="text" class="form-control" id="custom_dest_path" name="custom_dest_path"
-              placeholder="e.g., D:\Organized">
-          </div>
+      <!-- Folder Path Section -->
+      <div class="path-input-group">
+        <label for="folder_path" class="form-label mb-2 text-uppercase text-muted"
+          style="font-size: 0.8rem; letter-spacing: 1px; font-weight: 600;">Target / Output Directory</label>
+        <div class="input-group">
+          <span class="input-group-text" id="browse_btn" title="Select Folder"
+            style="background-color: #1a232b; border-color: #4A5663; color: #a0aab5; cursor: pointer;">
+            <i class="fa-regular fa-folder-open"></i>
+          </span>
+          <span class="input-group-text" id="browse_file_btn" title="Select Single File"
+            style="background-color: #1a232b; border-color: #4A5663; color: #a0aab5; cursor: pointer;">
+            <i class="fa-regular fa-file"></i>
+          </span>
+          <input type="text" class="form-control form-control-lg" id="folder_path" name="folder_path"
+            placeholder="C:\Users\Name\Downloads">
         </div>
       </div>
 
-      <div class="form-check form-switch mb-4">
-        <input class="form-check-input" type="checkbox" role="switch" name="dry_run" id="dry_run" value="yes">
-        <label class="form-check-label" for="dry_run">Dry Run (Preview Only)</label>
+      <!-- Categories Grid -->
+      <div class="row g-4">
+
+        <!-- Organization Column -->
+        <div class="col-md-6 col-lg-3">
+          <div class="feature-card">
+            <div class="card-header-custom">
+              <i class="fa-solid fa-layer-group card-header-icon"></i>
+              <h3 class="card-title">Organization</h3>
+            </div>
+            <div class="card-body-custom">
+              <!-- Sort & Move Files (Featured) -->
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="sort_move_files"
+                  id="sort_move_files" onclick="toggleSortMoveOptions()">
+                <label class="form-check-label fw-bold" for="sort_move_files">Sort & Move by Extension</label>
+              </div>
+
+              <!-- Collapsible Options for Sort & Move -->
+              <div id="sort_move_options" class="sub-options" style="display: none;">
+                <label class="form-label text-muted small mb-2">DESTINATION MODE:</label>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="destination_mode" value="1" id="mode_new_folder"
+                    onclick="toggleCustomDest()">
+                  <label class="form-check-label" for="mode_new_folder">New Backup Folder</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="destination_mode" value="2" id="mode_same_folder"
+                    checked onclick="toggleCustomDest()">
+                  <label class="form-check-label" for="mode_same_folder">Same Folder (In-Place)</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="destination_mode" value="3" id="mode_custom_path"
+                    onclick="toggleCustomDest()">
+                  <label class="form-check-label" for="mode_custom_path">Custom Path</label>
+                </div>
+                <div id="custom_dest_container" class="mt-2" style="display: none;">
+                  <input type="text" class="form-control form-control-sm" id="custom_dest_path" name="custom_dest_path"
+                    placeholder="e.g., D:\Organized">
+                </div>
+              </div>
+
+              <hr style="border-color: #3B4754; margin: 15px 0;">
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="segregate_by_year"
+                  id="segregate_by_year">
+                <label class="form-check-label" for="segregate_by_year">Segregate by Year</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="segregate_by_size"
+                  id="segregate_by_size">
+                <label class="form-check-label" for="segregate_by_size">Segregate by Size</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="process_movies"
+                  id="process_movies">
+                <label class="form-check-label" for="process_movies">Process Movies (IMDB)</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="organize_media"
+                  id="organize_media">
+                <label class="form-check-label fw-bold text-accent" for="organize_media" style="color: var(--accent);">
+                  <i class="fa-solid fa-film me-1"></i> Organize Media & Subs
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Images Management Column -->
+        <div class="col-md-6 col-lg-3">
+          <div class="feature-card">
+            <div class="card-header-custom">
+              <i class="fa-solid fa-image card-header-icon"></i>
+              <h3 class="card-title">Images</h3>
+            </div>
+            <div class="card-body-custom">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="compress_images"
+                  id="compress_images">
+                <label class="form-check-label" for="compress_images">Compress Images</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="extract_text"
+                  id="extract_text">
+                <label class="form-check-label" for="extract_text">Extract Text (OCR)</label>
+              </div>
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="modify_image_dates"
+                  id="modify_image_dates" onclick="toggleDateInput()">
+                <label class="form-check-label" for="modify_image_dates">Modify Image Dates</label>
+              </div>
+              <div id="date_input_container" class="sub-options" style="display: none;">
+                <label class="form-label text-muted small mb-2">TARGET DATE:</label>
+                <input type="datetime-local" class="form-control form-control-sm" name="target_date" id="target_date">
+              </div>
+
+              <hr style="border-color: #3B4754; margin: 15px 0;">
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="scrape_images"
+                  id="scrape_images" onclick="toggleScraperInputs()">
+                <label class="form-check-label fw-bold" for="scrape_images">Image Scraper</label>
+              </div>
+              <div id="scraper_inputs" class="sub-options" style="display: none;">
+                <label class="form-label text-muted small mb-1">URLS (One per line):</label>
+                <textarea class="form-control form-control-sm mb-2" name="scraper_urls" rows="3"
+                  placeholder="https://example.com/gallery"></textarea>
+
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" role="switch" name="scraper_dynamic" value="yes"
+                    id="scraper_dynamic">
+                  <label class="form-check-label small" for="scraper_dynamic">Use Browser Automation (Slow)</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Videos Management Column -->
+        <div class="col-md-6 col-lg-3">
+          <div class="feature-card">
+            <div class="card-header-custom">
+              <i class="fa-solid fa-video card-header-icon"></i>
+              <h3 class="card-title">Videos</h3>
+            </div>
+            <div class="card-body-custom">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="download_playlist"
+                  id="download_playlist" onclick="togglePlaylistInputs()">
+                <label class="form-check-label" for="download_playlist">Download YT Playlist</label>
+              </div>
+              <div id="playlist_inputs" class="sub-options" style="display: none;">
+                <label class="form-label text-muted small mb-1">PLAYLIST URL:</label>
+                <input type="text" class="form-control form-control-sm mb-2" name="playlist_url" id="playlist_url"
+                  placeholder="https://youtube.com/playlist...">
+
+                <label class="form-label text-muted small mb-1">MAX RESOLUTION:</label>
+                <select class="form-select form-select-sm" name="playlist_resolution">
+                  <option value="2160p">4K (2160p)</option>
+                  <option value="1440p">2K (1440p)</option>
+                  <option value="1080p" selected>1080p</option>
+                  <option value="720p">720p</option>
+                  <option value="480p">480p</option>
+                  <option value="360p">360p</option>
+                </select>
+              </div>
+
+              <hr style="border-color: #3B4754; margin: 15px 0;">
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="compress_videos_in_folder"
+                  id="compress_videos_in_folder">
+                <label class="form-check-label" for="compress_videos_in_folder">Compress Videos</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="move_long_videos"
+                  id="move_long_videos">
+                <label class="form-check-label" for="move_long_videos">Move Long Videos</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="segregate_files_by_resolution"
+                  id="segregate_files_by_resolution">
+                <label class="form-check-label" for="segregate_files_by_resolution">By Resolution (Full)</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="segregate_files_by_height"
+                  id="segregate_files_by_height">
+                <label class="form-check-label" for="segregate_files_by_height">By Height (e.g., 1080p)</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Maintenance Column -->
+        <div class="col-md-6 col-lg-3">
+          <div class="feature-card">
+            <div class="card-header-custom">
+              <i class="fa-solid fa-screwdriver-wrench card-header-icon"></i>
+              <h3 class="card-title">Maintenance</h3>
+            </div>
+            <div class="card-body-custom">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="detect_and_move_corrupt_files"
+                  id="detect_and_move_corrupt_files">
+                <label class="form-check-label" for="detect_and_move_corrupt_files">Detect Corrupt Files</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="rename_files"
+                  id="rename_files">
+                <label class="form-check-label" for="rename_files">Fix Weird Extensions</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="smart_rename"
+                  id="smart_rename">
+                <label class="form-check-label" for="smart_rename">Smart Rename</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="backup_git_work"
+                  id="backup_git_work">
+                <label class="form-check-label" for="backup_git_work">Backup Git Changes</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <button type="submit" class="btn btn-pink w-100">Run Selected Operations</button>
+      <div class="row align-items-center mt-4">
+        <div class="col-md-6">
+          <div class="form-check form-switch ps-4"> <!-- Added padding start to account for switch -->
+            <input class="form-check-input" style="width: 3em; height: 1.5em;" type="checkbox" role="switch"
+              name="dry_run" id="dry_run" value="yes">
+            <label class="form-check-label ms-2 pt-1" for="dry_run">Dry Run (Preview changes in log)</label>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <button type="submit" class="btn-action">
+            <i class="fa-solid fa-play me-2"></i> Run Selected Operations
+          </button>
+        </div>
+      </div>
     </form>
 
     {% if summary_data %}
-    <div class="mt-4">
-      <h6>Download Logs:</h6>
-      <ul>
-        {% for key, data in summary_data.items() %}
-        <li>
-          <a href="{{ url_for('download_log', logname=data.log_file) }}">
-            Download {{ data.log_file }}
-          </a>
-        </li>
-        {% endfor %}
-      </ul>
+    <div class="logs-container fade show" id="operation_logs_container">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="m-0"><i class="fa-solid fa-file-lines me-2"></i> Operation Logs</h6>
+        <button type="button" class="btn-close" aria-label="Close"
+          onclick="document.getElementById('operation_logs_container').remove()"></button>
+      </div>
+      {% for key, data in summary_data.items() %}
+      <a class="log-link" href="{{ url_for('download_log', logname=data.log_file) }}">
+        <i class="fa-solid fa-download"></i> Download log for <strong>{{ key }}</strong> ({{ data.log_file }})
+      </a>
+      {% if data.download_link %}
+      <a class="log-link text-accent fw-bold" href="{{ url_for('download_file', filename=data.download_link) }}"
+        style="color: var(--accent);">
+        <i class="fa-solid fa-file-arrow-down"></i> Download Results ({{ data.download_link }})
+      </a>
+      {% endif %}
+      {% endfor %}
     </div>
     {% endif %}
+
+  </div>
+
+  <!-- Logs Modal -->
+  <div class="modal fade" id="logsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content"
+        style="background-color: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color);">
+        <div class="modal-header" style="border-bottom: 1px solid var(--border-color);">
+          <h5 class="modal-title"><i class="fa-solid fa-clock-rotate-left me-2"></i>Recent Logs</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"
+            style="filter: invert(1) grayscale(100%) brightness(200%);"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-4 border-end" style="border-color: var(--border-color) !important;">
+              <div class="list-group list-group-flush" id="logs_list" style="max-height: 400px; overflow-y: auto;">
+                <div class="text-center text-muted p-3">Loading...</div>
+              </div>
+            </div>
+            <div class="col-8">
+              <pre id="log_content"
+                style="background: #1a232b; color: #a0aab5; padding: 15px; border-radius: 6px; height: 400px; overflow-y: auto; font-size: 0.85rem; border: 1px solid var(--border-color);">Select a log file to view details...</pre>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top: 1px solid var(--border-color);">
+          <small class="text-muted me-auto">Showing last 20 logs</small>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -172,6 +703,7 @@
 
       if (checkbox.checked) {
         optionsDiv.style.display = 'block';
+        // Add subtle animation class if needed
       } else {
         optionsDiv.style.display = 'none';
       }
@@ -183,9 +715,235 @@
 
       if (customPathRadio.checked) {
         customDestContainer.style.display = 'block';
+        setTimeout(() => document.getElementById('custom_dest_path').focus(), 100);
       } else {
         customDestContainer.style.display = 'none';
       }
+    }
+
+    function toggleDateInput() {
+      const checkbox = document.getElementById('modify_image_dates');
+      const container = document.getElementById('date_input_container');
+      if (checkbox.checked) {
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
+    function togglePlaylistInputs() {
+      const checkbox = document.getElementById('download_playlist');
+      const container = document.getElementById('playlist_inputs');
+      if (checkbox.checked) {
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
+    function toggleScraperInputs() {
+      const checkbox = document.getElementById('scrape_images');
+      const container = document.getElementById('scraper_inputs');
+      if (checkbox.checked) {
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
+    document.getElementById('browse_btn').addEventListener('click', function () {
+      fetch('/select_folder')
+        .then(response => response.json())
+        .then(data => {
+          if (data.path) {
+            document.getElementById('folder_path').value = data.path;
+          }
+        })
+        .catch(error => console.error('Error selecting folder:', error));
+    });
+
+    document.getElementById('browse_file_btn').addEventListener('click', function () {
+      fetch('/select_file')
+        .then(response => response.json())
+        .then(data => {
+          if (data.path) {
+            document.getElementById('folder_path').value = data.path;
+          }
+        })
+        .catch(error => console.error('Error selecting file:', error));
+    });
+
+    // Theme Toggle Logic
+    const themeToggle = document.getElementById('theme_toggle');
+    const htmlEl = document.documentElement;
+    const bodyEl = document.body;
+
+    // Check local storage
+    if (localStorage.getItem('theme') === 'light') {
+      htmlEl.setAttribute('data-theme', 'light');
+      themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
+
+      // Restore custom background if exists
+      const savedColor = localStorage.getItem('lightModeBg');
+      if (savedColor) {
+        htmlEl.style.setProperty('--bg-dark', savedColor);
+      }
+    }
+
+    themeToggle.addEventListener('click', () => {
+      if (htmlEl.getAttribute('data-theme') === 'light') {
+        // Switch to Dark
+        htmlEl.removeAttribute('data-theme');
+        themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i>';
+        localStorage.setItem('theme', 'dark');
+        htmlEl.style.removeProperty('--bg-dark'); // Reset override
+
+        // Fix modal close button filter for dark mode
+        document.querySelectorAll('.btn-close').forEach(btn => btn.style.filter = 'invert(1) grayscale(100%) brightness(200%)');
+      } else {
+        // Switch to Light
+        htmlEl.setAttribute('data-theme', 'light');
+        themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
+        localStorage.setItem('theme', 'light');
+
+        // Apply saved color
+        const savedColor = localStorage.getItem('lightModeBg');
+        if (savedColor) htmlEl.style.setProperty('--bg-dark', savedColor);
+
+        // Fix modal close button filter for light mode
+        document.querySelectorAll('.btn-close').forEach(btn => btn.style.filter = 'none');
+      }
+    });
+
+    // Palette Logic
+    const paletteBtn = document.getElementById('palette_btn');
+    const colorOptions = document.getElementById('color_options');
+
+    paletteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (colorOptions.style.display === 'grid') {
+        colorOptions.style.display = 'none';
+      } else {
+        colorOptions.style.display = 'grid';
+      }
+    });
+
+    document.querySelectorAll('.color-swatch').forEach(swatch => {
+      swatch.addEventListener('click', (e) => {
+        const color = e.target.getAttribute('data-color');
+
+        // Force Light Mode if not active
+        if (htmlEl.getAttribute('data-theme') !== 'light') {
+          themeToggle.click(); // Reuse toggle logic to switch state
+        }
+
+        htmlEl.style.setProperty('--bg-dark', color);
+        localStorage.setItem('lightModeBg', color);
+      });
+    });
+
+    // Close palette when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!paletteBtn.contains(e.target) && !colorOptions.contains(e.target)) {
+        colorOptions.style.display = 'none';
+      }
+    });
+
+    // Logs Viewer Logic
+    const logsModal = document.getElementById('logsModal');
+    logsModal.addEventListener('show.bs.modal', function () {
+      fetch('/api/logs')
+        .then(res => res.json())
+        .then(data => {
+          const list = document.getElementById('logs_list');
+          list.innerHTML = '';
+          if (data.logs && data.logs.length > 0) {
+            data.logs.forEach(log => {
+              // Create list item with delete button
+              const item = document.createElement('div');
+              item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+              item.style.cursor = 'pointer';
+              item.style.backgroundColor = 'transparent'; // will be set by JS
+              item.style.borderColor = 'var(--border-color)';
+              item.style.color = 'var(--text-main)';
+
+              const textSpan = document.createElement('div');
+              textSpan.style.maxWidth = '200px';
+              textSpan.style.overflow = 'hidden';
+              textSpan.style.textOverflow = 'ellipsis';
+              textSpan.innerText = log;
+
+              const btn = document.createElement('button');
+              btn.className = 'btn btn-sm btn-outline-danger border-0';
+              btn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+              btn.title = 'Delete Log';
+
+              // Event bubbling handling
+              item.onclick = (e) => {
+                if (e.target !== btn && !btn.contains(e.target)) {
+                  loadLogContent(log, item);
+                }
+              };
+
+              btn.onclick = (e) => deleteLog(log, e);
+
+              item.appendChild(textSpan);
+              item.appendChild(btn);
+              list.appendChild(item);
+            });
+            // Auto load first log
+            if (list.firstChild) loadLogContent(data.logs[0], list.firstChild);
+          } else {
+            list.innerHTML = '<div class="text-center text-muted p-2">No logs found</div>';
+          }
+        });
+    });
+
+    function loadLogContent(filename, element) {
+      // Highlight active
+      document.querySelectorAll('#logs_list .list-group-item').forEach(el => {
+        el.classList.remove('active');
+        el.style.backgroundColor = 'transparent';
+        el.style.color = 'var(--text-main)';
+      });
+      element.classList.add('active');
+      element.style.backgroundColor = 'var(--accent)';
+      element.style.color = '#fff';
+
+      document.getElementById('log_content').innerText = 'Loading content...';
+      fetch(`/api/logs/content/${filename}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('log_content').innerText = data.content || 'Empty log file';
+        })
+        .catch(err => {
+          document.getElementById('log_content').innerText = 'Error loading log: ' + err;
+        });
+    }
+
+    function deleteLog(logName, event) {
+      event.stopPropagation(); // Prevent clicking the item
+      if (!confirm(`Are you sure you want to delete ${logName}?`)) return;
+
+      fetch(`/api/logs/delete/${logName}`, { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            // Remove from UI
+            const btn = event.target.closest('button');
+            const item = btn.closest('.list-group-item');
+            item.remove();
+
+            // Clear content if it was showing this log
+            const contentPre = document.getElementById('log_content');
+            if (contentPre.innerText.includes('Loading') || contentPre.innerText.length > 0) {
+              contentPre.textContent = 'Select a log file to view details...';
+            }
+          } else {
+            alert('Failed to delete log: ' + data.message);
+          }
+        })
+        .catch(error => console.error('Error deleting log:', error));
     }
   </script>
 </body>

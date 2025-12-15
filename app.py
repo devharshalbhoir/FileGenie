@@ -1,168 +1,103 @@
 import os
-import asyncio
-from flask import Flask, render_template, request, flash, send_file, redirect, url_for
-from datetime import datetime
+import sys
+import subprocess
+from flask import Flask, render_template, request, flash, send_file, redirect, url_for, send_from_directory, session, jsonify
 
-from scripts.compress_videos_in_folder import compress_videos_in_folder
-from scripts.detect_and_move_corrupt_files import detect_and_move_corrupt_files
-from scripts.search_movie_on_imdb import process_movies
-from scripts.segregate_by_year import segregate_files_by_year
-from scripts.segregate_by_size import segregate_files_by_size
-from scripts.move_long_videos import find_and_move_long_videos
-from scripts.segregate_by_resolution import segregate_files_by_resolution
-from scripts.segregate_by_height_res import segregate_files_by_height
-from scripts.rename_files import rename_files
-from scripts.smart_rename import rename_files_in_folder
-from scripts.sort_move_files import sort_move_files
+# Services & Utils
+from utils.file_cleanup import start_cleanup_thread
+from services.operations import OperationService
 
 app = Flask(__name__)
 app.secret_key = 'abcde'
-LOG_DIR = os.path.join(os.getcwd(), 'logs')
-os.makedirs(LOG_DIR, exist_ok=True)
 
+# Config
+LOG_DIR = os.path.join(os.getcwd(), 'logs')
+TEMP_DIR = os.path.join(os.getcwd(), 'temp_downloads')
+os.makedirs(LOG_DIR, exist_ok=True)
+os.makedirs(TEMP_DIR, exist_ok=True)
+
+# Start Background Cleanup
+start_cleanup_thread(TEMP_DIR)
+
+# Initialize Service
+operation_service = OperationService(LOG_DIR, TEMP_DIR)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    print(request.method)
-    summary_data = {}
+    summary_data = session.pop('summary_data', {})
 
     if request.method == 'POST':
         folder_path = request.form.get('folder_path')
-        operations = request.form.getlist('operations')  # ✅ updated key
+        operations = request.form.getlist('operations')
         is_dry_run = request.form.get('dry_run') == 'yes'
-        print("Running:", operations, "→", folder_path, "Dry run:", is_dry_run)
+        
+        print("Running operations:", operations, "DryRun:", is_dry_run)
 
-        if not folder_path or not os.path.isdir(folder_path):
-            flash('❌ Please enter a valid folder path.', 'danger')
-        else:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        # Smart Validation Logic
+        URL_ONLY_OPERATIONS = {'scrape_images', 'download_playlist'}
+        FILE_OR_DIR_OPERATIONS = {'extract_text'}
+        has_source_ops = any(op not in URL_ONLY_OPERATIONS for op in operations)
 
-            if 'segregate_by_year' in operations:
+        # Default path logic for URL operations if empty
+        if not folder_path and not has_source_ops and operations:
+            folder_path = os.path.join(os.getcwd(), 'downloads')
+            flash(f"ℹ️ No path provided. Defaulting to: {folder_path}", 'info')
+
+        # Basic path validation
+        if not folder_path and has_source_ops:
+             flash('❌ Please enter a valid path.', 'danger')
+             operations = [] # Skip
+        elif folder_path and not os.path.exists(folder_path):
+             if not has_source_ops and operations:
                 try:
-                    log_file = os.path.join(LOG_DIR, f'year_log_{timestamp}.txt')
-                    result = asyncio.run(segregate_files_by_year(folder_path, dry_run=is_dry_run, log_path=log_file))
-                    flash(
-                        f"✅ Year-based segregation done. {result['moved_total']} moved, {result['skipped_total']} skipped.",
-                        'success')
-                    summary_data['segregate_by_year'] = {'log_file': os.path.basename(log_file)}
+                    os.makedirs(folder_path, exist_ok=True)
+                    flash(f"✅ Created output directory: {folder_path}", 'success')
                 except Exception as e:
-                    flash(f'❌ Error in year segregation: {e}', 'danger')
+                    flash(f"❌ Could not create directory: {e}", 'danger')
+                    operations = []
+             else:
+                flash('❌ Target path does not exist.', 'danger')
+                operations = []
 
-            if 'segregate_files_by_resolution' in operations:
+        # Execute Operations
+        if operations:
+            for op in operations:
                 try:
-                    log_file = os.path.join(LOG_DIR, f'year_log_{timestamp}.txt')
-                    result = asyncio.run(
-                        segregate_files_by_resolution(folder_path, dry_run=is_dry_run, log_path=log_file))
-                    flash(
-                        f"✅ Resolution-based segregation done. {result['moved_total']} moved, {result['skipped_total']} skipped.",
-                        'success')
-                    summary_data['segregate_files_by_resolution'] = {'log_file': os.path.basename(log_file)}
+                    success_msg, summary_entry = operation_service.execute(op, folder_path, request.form, is_dry_run)
+                    if success_msg:
+                        flash(success_msg, 'success' if 'Error' not in success_msg else 'danger')
+                    if summary_entry:
+                        summary_data[op] = summary_entry
                 except Exception as e:
-                    flash(f'❌ Error in year segregation: {e}', 'danger')
-
-            if 'segregate_files_by_height' in operations:
-                try:
-                    log_file = os.path.join(LOG_DIR, f'year_log_{timestamp}.txt')
-                    result = asyncio.run(segregate_files_by_height(folder_path, dry_run=is_dry_run, log_path=log_file))
-                    flash(
-                        f"✅ Height Resolution-based segregation done. {result['moved_total']} moved, {result['skipped_total']} skipped.",
-                        'success')
-                    summary_data['segregate_files_by_height'] = {'log_file': os.path.basename(log_file)}
-                except Exception as e:
-                    flash(f'❌ Error in year segregation: {e}', 'danger')
-
-            if 'compress_videos_in_folder' in operations:
-                try:
-                    log_file = os.path.join(LOG_DIR, f'year_log_{timestamp}.txt')
-                    result = asyncio.run(compress_videos_in_folder(folder_path))
-                    flash(
-                        f"✅ Compressed videos done. {result['moved_total']} moved, {result['skipped_total']} skipped.",
-                        'success')
-                    summary_data['compress_videos_in_folder'] = {'log_file': os.path.basename(log_file)}
-                except Exception as e:
-                    flash(f'❌ Error in year segregation: {e}', 'danger')
-
-            if 'detect_and_move_corrupt_files' in operations:
-                try:
-                    log_file = os.path.join(LOG_DIR, f'year_log_{timestamp}.txt')
-                    result = asyncio.run(detect_and_move_corrupt_files(folder_path))
-                    flash(
-                        f"✅ Detect and move corrupt files done. {result['moved_total']} moved, {result['skipped_total']} skipped.",
-                        'success')
-                    summary_data['detect_and_move_corrupt_files'] = {'log_file': os.path.basename(log_file)}
-                except Exception as e:
-                    flash(f'❌ Error in year segregation: {e}', 'danger')
-
-            if 'segregate_by_size' in operations:
-                try:
-                    log_file = os.path.join(LOG_DIR, f'size_log_{timestamp}.txt')
-                    segregate_files_by_size(folder_path, dry_run=is_dry_run, log_path=log_file)
-                    flash('✅ Size-based segregation completed.', 'success')
-                    summary_data['segregate_by_size'] = {'log_file': os.path.basename(log_file)}
-                except Exception as e:
-                    flash(f'❌ Error in size segregation: {e}', 'danger')
-
-            if 'move_long_videos' in operations:
-                try:
-                    log_file = os.path.join(LOG_DIR, f'video_log_{timestamp}.txt')
-                    asyncio.run(find_and_move_long_videos(folder_path, dry_run=is_dry_run, log_path=log_file))
-                    flash('✅ Long video segregation completed.', 'success')
-                    summary_data['move_long_videos'] = {'log_file': os.path.basename(log_file)}
-                except Exception as e:
-                    flash(f'❌ Error in long video segregation: {e}', 'danger')
-
-            if 'rename_files' in operations:
-                try:
-                    log_file = os.path.join(LOG_DIR, f'rename_ext_log_{timestamp}.txt')
-                    rename_files(folder_path, dry_run=is_dry_run, log_path=log_file)
-                    flash('✅ Extension-based renaming completed.', 'success')
-                    summary_data['rename_files'] = {'log_file': os.path.basename(log_file)}
-                except Exception as e:
-                    flash(f'❌ Error in renaming files: {e}', 'danger')
-
-            if 'smart_rename' in operations:
-                try:
-                    log_file = os.path.join(LOG_DIR, f'smart_rename_log_{timestamp}.txt')
-                    rename_files_in_folder(folder_path, dry_run=is_dry_run, log_path=log_file)
-                    flash('✅ Smart renaming completed.', 'success')
-                    summary_data['smart_rename'] = {'log_file': os.path.basename(log_file)}
-                except Exception as e:
-                    flash(f'❌ Error during smart renaming: {e}', 'danger')
-
-            if 'process_movies' in operations:
-                try:
-                    log_file = os.path.join(LOG_DIR, f'smart_rename_log_{timestamp}.txt')
-                    process_movies(folder_path)
-                    flash('✅ Smart renaming completed.', 'success')
-                    summary_data['process_movies'] = {'log_file': os.path.basename(log_file)}
-                except Exception as e:
-                    flash(f'❌ Error during smart renaming: {e}', 'danger')
-
-            if 'sort_move_files' in operations:
-                try:
-                    log_file = os.path.join(LOG_DIR, f'sort_move_log_{timestamp}.txt')
-                    destination_mode = request.form.get('destination_mode', '2')
-                    custom_dest_path = request.form.get('custom_dest_path', '')
-                    
-                    # For mode 3, validate custom destination path
-                    dest_path = custom_dest_path if destination_mode == '3' else None
-                    
-                    result = sort_move_files(
-                        folder_path, 
-                        destination_mode, 
-                        dest_path=dest_path,
-                        dry_run=is_dry_run, 
-                        log_path=log_file
-                    )
-                    flash(
-                        f"✅ Sort & Move by extension completed. {result['moved_total']} moved, {result['skipped_total']} skipped.",
-                        'success'
-                    )
-                    summary_data['sort_move_files'] = {'log_file': os.path.basename(log_file)}
-                except Exception as e:
-                    flash(f'❌ Error in sort & move files: {e}', 'danger')
+                    flash(f"❌ Error in {op}: {e}", 'danger')
+            
+            session['summary_data'] = summary_data
+            return redirect(url_for('index'))
+        elif not operations and request.method == 'POST':
+             # Only show warning if no ops were valid/selected (and we didn't just fail validation)
+             if not flash: 
+                 flash('❌ Please select an operation.', 'warning')
 
     return render_template('index.html', summary_data=summary_data)
+
+
+@app.route('/select_folder')
+def select_folder():
+    try:
+        cmd = [sys.executable, "-c", "import tkinter as tk; from tkinter import filedialog; root = tk.Tk(); root.withdraw(); print(filedialog.askdirectory())"]
+        path = subprocess.check_output(cmd).decode('utf-8').strip()
+        return {"path": path}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.route('/select_file')
+def select_file():
+    try:
+        cmd = [sys.executable, "-c", "import tkinter as tk; from tkinter import filedialog; root = tk.Tk(); root.withdraw(); print(filedialog.askopenfilename())"]
+        path = subprocess.check_output(cmd).decode('utf-8').strip()
+        return {"path": path}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @app.route('/download_log/<logname>')
@@ -174,6 +109,54 @@ def download_log(logname):
         flash("❌ Log file not found.", "danger")
         return redirect(url_for('index'))
 
+
+@app.route('/download_file/<filename>')
+def download_file(filename):
+    """Serves files from the temp_downloads directory."""
+    try:
+        safe_name = os.path.basename(filename)
+        return send_from_directory(TEMP_DIR, safe_name, as_attachment=True)
+    except Exception as e:
+        return str(e), 404
+
+@app.route('/api/logs', methods=['GET'])
+def list_logs():
+    """Lists recent log files (newest first)."""
+    try:
+        logs = sorted(
+            [f for f in os.listdir(LOG_DIR) if f.endswith('.txt')],
+            key=lambda x: os.path.getmtime(os.path.join(LOG_DIR, x)),
+            reverse=True
+        )
+        return jsonify({'logs': logs})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/logs/content/<logname>', methods=['GET'])
+def get_log_content(logname):
+    """Returns content of a specific log file."""
+    try:
+        log_path = os.path.join(LOG_DIR, logname)
+        if not os.path.exists(log_path):
+            return jsonify({'error': 'Log not found'}), 404
+            
+        with open(log_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return jsonify({'content': content})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/logs/delete/<logname>', methods=['DELETE'])
+def delete_log(logname):
+    try:
+        log_path = os.path.join(LOG_DIR, logname)
+        if os.path.exists(log_path):
+            os.remove(log_path)
+            return jsonify({'status': 'success', 'message': f'Deleted {logname}'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Log file not found'}), 404
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
