@@ -19,6 +19,7 @@ from scripts.smart_rename import rename_files_in_folder
 from scripts.image_date_modifier import modify_image_dates
 from scripts.sort_move_files import sort_move_files
 from scripts.playlist_downloader import download_playlist
+from scripts.move_worked_files_in_gitrepo import backup_git_work
 
 app = Flask(__name__)
 app.secret_key = 'abcde'
@@ -215,6 +216,20 @@ def index():
                         summary_data['download_playlist'] = {'log_file': os.path.basename(log_file)}
                 except Exception as e:
                     flash(f'❌ Error in playlist download: {e}', 'danger')
+
+            if 'backup_git_work' in operations:
+                try:
+                    log_file = os.path.join(LOG_DIR, f'git_backup_log_{timestamp}.txt')
+                    result = asyncio.run(backup_git_work(folder_path, log_path=log_file))
+                    
+                    if result.get('error'):
+                         flash(f"{result['error']}", 'danger')
+                    else:
+                         flash(f"✅ Git Backup completed. {result['moved_total']} files backed up.", 'success')
+                    
+                    summary_data['backup_git_work'] = {'log_file': os.path.basename(log_file)}
+                except Exception as e:
+                    flash(f'❌ Error in Git backup: {e}', 'danger')
 
     return render_template('index.html', summary_data=summary_data)
 
