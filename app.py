@@ -20,6 +20,9 @@ from scripts.image_date_modifier import modify_image_dates
 from scripts.sort_move_files import sort_move_files
 from scripts.playlist_downloader import download_playlist
 from scripts.move_worked_files_in_gitrepo import backup_git_work
+from scripts.media_organizer import organize_media
+from scripts.image_scraper import scrape_images_task
+from scripts.text_extractor import extract_text_task
 
 app = Flask(__name__)
 app.secret_key = 'abcde'
@@ -38,10 +41,44 @@ def index():
         is_dry_run = request.form.get('dry_run') == 'yes'
         print("Running:", operations, "→", folder_path, "Dry run:", is_dry_run)
 
-        if not folder_path or not os.path.isdir(folder_path):
-            flash('❌ Please enter a valid folder path.', 'danger')
+        if not folder_path and not operations:
+             flash('❌ Please select an operation.', 'warning')
         else:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            # Smart Validation Logic
+            URL_ONLY_OPERATIONS = {'scrape_images', 'download_playlist'}
+            # For OCR, folder_path can be a FILE path.
+            FILE_OR_DIR_OPERATIONS = {'extract_text'}
+            
+            has_source_ops = any(op not in URL_ONLY_OPERATIONS for op in operations)
+            
+            # Default path logic for URL operations if empty
+            if not folder_path and not has_source_ops and operations:
+                folder_path = os.path.join(os.getcwd(), 'downloads')
+                flash(f"ℹ️ No path provided. Defaulting to: {folder_path}", 'info')
+            
+            # Validation
+            if not folder_path: # Still empty and needed
+                flash('❌ Please enter a valid path.', 'danger')
+            elif not os.path.exists(folder_path):
+                 if not has_source_ops and operations:
+                    try:
+                        os.makedirs(folder_path, exist_ok=True)
+                        flash(f"✅ Created output directory: {folder_path}", 'success')
+                    except Exception as e:
+                        flash(f"❌ Could not create directory: {e}", 'danger')
+                        folder_path = None # Invalid
+                 else:
+                    flash('❌ Target path does not exist.', 'danger')
+                    folder_path = None # Invalid
+            
+            # Extra Check: if path is file but operation requires folder (e.g., sort_move)
+            # We assume most ops require folder unless specified.
+            if folder_path and os.path.isfile(folder_path):
+                 # logic to prevent incompatible ops on file could go here, but for now we trust user
+                 pass
+
+            if folder_path:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
             if 'segregate_by_year' in operations:
                 try:
@@ -231,14 +268,65 @@ def index():
                 except Exception as e:
                     flash(f'❌ Error in Git backup: {e}', 'danger')
 
+            if 'organize_media' in operations:
+                try:
+                    log_file = os.path.join(LOG_DIR, f'media_organizer_log_{timestamp}.txt')
+                    result = asyncio.run(organize_media(folder_path, dry_run=is_dry_run, log_path=log_file))
+                    flash(f"✅ Media organization completed. Check logs for details.", 'success')
+                    summary_data['organize_media'] = {'log_file': os.path.basename(log_file)}
+                except Exception as e:
+                    flash(f'❌ Error in media organization: {e}', 'danger')
+
+            if 'scrape_images' in operations:
+                try:
+                    urls_text = request.form.get('scraper_urls', '')
+                    use_dynamic = request.form.get('scraper_dynamic') == 'yes'
+                    
+                    if not urls_text.strip():
+                        flash("❌ No URLs provided for scraping.", "warning")
+                    else:
+                        urls = urls_text.splitlines()
+                        log_file = os.path.join(LOG_DIR, f'scraper_log_{timestamp}.txt')
+                        
+                        # Run the task
+                        result = asyncio.run(scrape_images_task(urls, folder_path, use_dynamic=use_dynamic, log_path=log_file))
+                        
+                        flash(f"✅ Scraping finished. Processed {result['total_processed']} URLs.", 'success')
+                        summary_data['scrape_images'] = {'log_file': os.path.basename(log_file)}
+
+                except Exception as e:
+                    flash(f'❌ Error in image scraper: {e}', 'danger')
+
+            if 'extract_text' in operations:
+                try:
+                     log_file = os.path.join(LOG_DIR, f'ocr_log_{timestamp}.txt')
+                     # Allow folder_path to be a file path for this op
+                     result = asyncio.run(extract_text_task(folder_path, dry_run=is_dry_run, log_path=log_file))
+                     flash(f"✅ OCR completed. Processed {result['processed']} images.", 'success')
+                     summary_data['extract_text'] = {'log_file': os.path.basename(log_file)}
+                except EnvironmentError as e:
+                    flash(f"❌ Dependency Error: {e}", 'danger')
+                except Exception as e:
+                    flash(f"❌ Error in OCR: {e}", 'danger')
+
     return render_template('index.html', summary_data=summary_data)
 
 
 @app.route('/select_folder')
 def select_folder():
     try:
-        # Open directory dialog using a subprocess to avoid main thread issues
+        # Open directory dialog
         cmd = [sys.executable, "-c", "import tkinter as tk; from tkinter import filedialog; root = tk.Tk(); root.withdraw(); print(filedialog.askdirectory())"]
+        path = subprocess.check_output(cmd).decode('utf-8').strip()
+        return {"path": path}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.route('/select_file')
+def select_file():
+    try:
+        # Open file dialog
+        cmd = [sys.executable, "-c", "import tkinter as tk; from tkinter import filedialog; root = tk.Tk(); root.withdraw(); print(filedialog.askopenfilename())"]
         path = subprocess.check_output(cmd).decode('utf-8').strip()
         return {"path": path}
     except Exception as e:

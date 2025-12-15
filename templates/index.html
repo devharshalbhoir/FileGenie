@@ -252,14 +252,18 @@
       <!-- Folder Path Section -->
       <div class="path-input-group">
         <label for="folder_path" class="form-label mb-2 text-uppercase text-muted"
-          style="font-size: 0.8rem; letter-spacing: 1px; font-weight: 600;">Target Directory</label>
+          style="font-size: 0.8rem; letter-spacing: 1px; font-weight: 600;">Target / Output Directory</label>
         <div class="input-group">
-          <span class="input-group-text" id="browse_btn"
+          <span class="input-group-text" id="browse_btn" title="Select Folder"
             style="background-color: #1a232b; border-color: #4A5663; color: #a0aab5; cursor: pointer;">
             <i class="fa-regular fa-folder-open"></i>
           </span>
+          <span class="input-group-text" id="browse_file_btn" title="Select Single File"
+            style="background-color: #1a232b; border-color: #4A5663; color: #a0aab5; cursor: pointer;">
+            <i class="fa-regular fa-file"></i>
+          </span>
           <input type="text" class="form-control form-control-lg" id="folder_path" name="folder_path"
-            placeholder="C:\Users\Name\Downloads" required>
+            placeholder="C:\Users\Name\Downloads">
         </div>
       </div>
 
@@ -267,7 +271,7 @@
       <div class="row g-4">
 
         <!-- Organization Column -->
-        <div class="col-md-4">
+        <div class="col-md-6 col-lg-3">
           <div class="feature-card">
             <div class="card-header-custom">
               <i class="fa-solid fa-layer-group card-header-icon"></i>
@@ -322,22 +326,34 @@
                   id="process_movies">
                 <label class="form-check-label" for="process_movies">Process Movies (IMDB)</label>
               </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="organize_media"
+                  id="organize_media">
+                <label class="form-check-label fw-bold text-accent" for="organize_media" style="color: var(--accent);">
+                  <i class="fa-solid fa-film me-1"></i> Organize Media & Subs
+                </label>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Video Management Column -->
-        <div class="col-md-4">
+        <!-- Images Management Column -->
+        <div class="col-md-6 col-lg-3">
           <div class="feature-card">
             <div class="card-header-custom">
-              <i class="fa-solid fa-photo-film card-header-icon"></i>
-              <h3 class="card-title">Media Tools</h3>
+              <i class="fa-solid fa-image card-header-icon"></i>
+              <h3 class="card-title">Images</h3>
             </div>
             <div class="card-body-custom">
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="operations" value="compress_images"
                   id="compress_images">
                 <label class="form-check-label" for="compress_images">Compress Images</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="extract_text"
+                  id="extract_text">
+                <label class="form-check-label" for="extract_text">Extract Text (OCR)</label>
               </div>
 
               <div class="form-check">
@@ -353,9 +369,37 @@
               <hr style="border-color: #3B4754; margin: 15px 0;">
 
               <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="scrape_images"
+                  id="scrape_images" onclick="toggleScraperInputs()">
+                <label class="form-check-label fw-bold" for="scrape_images">Image Scraper</label>
+              </div>
+              <div id="scraper_inputs" class="sub-options" style="display: none;">
+                <label class="form-label text-muted small mb-1">URLS (One per line):</label>
+                <textarea class="form-control form-control-sm mb-2" name="scraper_urls" rows="3"
+                  placeholder="https://example.com/gallery"></textarea>
+
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" role="switch" name="scraper_dynamic" value="yes"
+                    id="scraper_dynamic">
+                  <label class="form-check-label small" for="scraper_dynamic">Use Browser Automation (Slow)</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Videos Management Column -->
+        <div class="col-md-6 col-lg-3">
+          <div class="feature-card">
+            <div class="card-header-custom">
+              <i class="fa-solid fa-video card-header-icon"></i>
+              <h3 class="card-title">Videos</h3>
+            </div>
+            <div class="card-body-custom">
+              <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="operations" value="download_playlist"
                   id="download_playlist" onclick="togglePlaylistInputs()">
-                <label class="form-check-label" for="download_playlist">Download YouTube Playlist</label>
+                <label class="form-check-label" for="download_playlist">Download YT Playlist</label>
               </div>
               <div id="playlist_inputs" class="sub-options" style="display: none;">
                 <label class="form-label text-muted small mb-1">PLAYLIST URL:</label>
@@ -372,6 +416,8 @@
                   <option value="360p">360p</option>
                 </select>
               </div>
+
+              <hr style="border-color: #3B4754; margin: 15px 0;">
 
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="operations" value="compress_videos_in_folder"
@@ -398,7 +444,7 @@
         </div>
 
         <!-- Maintenance Column -->
-        <div class="col-md-4">
+        <div class="col-md-6 col-lg-3">
           <div class="feature-card">
             <div class="card-header-custom">
               <i class="fa-solid fa-screwdriver-wrench card-header-icon"></i>
@@ -506,6 +552,16 @@
       }
     }
 
+    function toggleScraperInputs() {
+      const checkbox = document.getElementById('scrape_images');
+      const container = document.getElementById('scraper_inputs');
+      if (checkbox.checked) {
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
     document.getElementById('browse_btn').addEventListener('click', function () {
       fetch('/select_folder')
         .then(response => response.json())
@@ -515,6 +571,17 @@
           }
         })
         .catch(error => console.error('Error selecting folder:', error));
+    });
+
+    document.getElementById('browse_file_btn').addEventListener('click', function () {
+      fetch('/select_file')
+        .then(response => response.json())
+        .then(data => {
+          if (data.path) {
+            document.getElementById('folder_path').value = data.path;
+          }
+        })
+        .catch(error => console.error('Error selecting file:', error));
     });
   </script>
 </body>

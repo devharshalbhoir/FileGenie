@@ -1,3 +1,14 @@
 imdbmovies
 Flask~=3.1.1
 Werkzeug==3.1.0
+mnamer
+subliminal
+selenium
+webdriver-manager
+pandas
+aiohttp
+beautifulsoup4
+requests
+pytesseract
+Pillow
+python-docx
