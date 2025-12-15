@@ -18,6 +18,7 @@ from scripts.rename_files import rename_files
 from scripts.smart_rename import rename_files_in_folder
 from scripts.image_date_modifier import modify_image_dates
 from scripts.sort_move_files import sort_move_files
+from scripts.playlist_downloader import download_playlist
 
 app = Flask(__name__)
 app.secret_key = 'abcde'
@@ -192,6 +193,28 @@ def index():
                         summary_data['modify_image_dates'] = {'log_file': os.path.basename(log_file)}
                 except Exception as e:
                     flash(f'❌ Error in date modification: {e}', 'danger')
+
+            if 'download_playlist' in operations:
+                try:
+                    playlist_url = request.form.get('playlist_url')
+                    resolution = request.form.get('playlist_resolution', '1080p')
+                    
+                    if not playlist_url:
+                        flash("❌ Please enter a playlist URL.", "warning")
+                    else:
+                        log_file = os.path.join(LOG_DIR, f'playlist_log_{timestamp}.txt')
+                        # Note: This might timeout for very large playlists if not async-detached, 
+                        # but follows current pattern.
+                        result = asyncio.run(download_playlist(playlist_url, folder_path, resolution, log_path=log_file))
+                        
+                        if result.get('error'):
+                             flash(f"{result['error']}", 'danger')
+                        else:
+                             flash(f"✅ Playlist download task finished. Check logs.", 'success')
+                        
+                        summary_data['download_playlist'] = {'log_file': os.path.basename(log_file)}
+                except Exception as e:
+                    flash(f'❌ Error in playlist download: {e}', 'danger')
 
     return render_template('index.html', summary_data=summary_data)
 

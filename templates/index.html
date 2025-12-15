@@ -349,6 +349,30 @@
                 <label class="form-label text-muted small mb-2">TARGET DATE:</label>
                 <input type="datetime-local" class="form-control form-control-sm" name="target_date" id="target_date">
               </div>
+
+              <hr style="border-color: #3B4754; margin: 15px 0;">
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="download_playlist"
+                  id="download_playlist" onclick="togglePlaylistInputs()">
+                <label class="form-check-label" for="download_playlist">Download YouTube Playlist</label>
+              </div>
+              <div id="playlist_inputs" class="sub-options" style="display: none;">
+                <label class="form-label text-muted small mb-1">PLAYLIST URL:</label>
+                <input type="text" class="form-control form-control-sm mb-2" name="playlist_url" id="playlist_url"
+                  placeholder="https://youtube.com/playlist...">
+
+                <label class="form-label text-muted small mb-1">MAX RESOLUTION:</label>
+                <select class="form-select form-select-sm" name="playlist_resolution">
+                  <option value="2160p">4K (2160p)</option>
+                  <option value="1440p">2K (1440p)</option>
+                  <option value="1080p" selected>1080p</option>
+                  <option value="720p">720p</option>
+                  <option value="480p">480p</option>
+                  <option value="360p">360p</option>
+                </select>
+              </div>
+
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="operations" value="compress_videos_in_folder"
                   id="compress_videos_in_folder">
@@ -460,6 +484,16 @@
     function toggleDateInput() {
       const checkbox = document.getElementById('modify_image_dates');
       const container = document.getElementById('date_input_container');
+      if (checkbox.checked) {
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
+    function togglePlaylistInputs() {
+      const checkbox = document.getElementById('download_playlist');
+      const container = document.getElementById('playlist_inputs');
       if (checkbox.checked) {
         container.style.display = 'block';
       } else {
