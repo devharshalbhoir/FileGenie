@@ -145,11 +145,13 @@ async def extract_text_task(target_path, output_format='docx', dry_run=False, lo
         return {'processed': len(files_to_process), 'failed': 0}
 
     # Process files
+    results['generated_files'] = []
     for file_path in files_to_process:
         try:
-            success = process_single_image(file_path, output_format, logger)
-            if success:
+            output_path = process_single_image(file_path, output_format, logger)
+            if output_path:
                 results['processed'] += 1
+                results['generated_files'].append(output_path)
             else:
                 results['failed'] += 1
         except EnvironmentError as e:

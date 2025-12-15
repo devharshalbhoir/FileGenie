@@ -2,7 +2,7 @@ import os
 import sys
 import subprocess
 import asyncio
-from flask import Flask, render_template, request, flash, send_file, redirect, url_for
+from flask import Flask, render_template, request, flash, send_file, redirect, url_for, send_from_directory, session, jsonify
 from datetime import datetime
 
 from scripts.compress_videos_in_folder import compress_videos_in_folder
@@ -23,6 +23,39 @@ from scripts.move_worked_files_in_gitrepo import backup_git_work
 from scripts.media_organizer import organize_media
 from scripts.image_scraper import scrape_images_task
 from scripts.text_extractor import extract_text_task
+import glob
+import glob
+import shutil
+import zipfile
+import time
+import threading
+
+# Config
+TEMP_DIR = os.path.join(os.getcwd(), 'temp_downloads')
+os.makedirs(TEMP_DIR, exist_ok=True)
+
+def cleanup_temp_files():
+    """Deletes files in TEMP_DIR older than 1 hour."""
+    now = time.time()
+    cutoff = 3600 # 1 hour
+    
+    for filename in os.listdir(TEMP_DIR):
+        file_path = os.path.join(TEMP_DIR, filename)
+        try:
+            if os.path.isfile(file_path):
+                if now - os.path.getmtime(file_path) > cutoff:
+                    os.remove(file_path)
+                    print(f"Cleaned up old temp file: {filename}")
+        except Exception as e:
+            print(f"Error cleaning {filename}: {e}")
+
+# Run cleanup on background thread
+def run_scheduler():
+    while True:
+        cleanup_temp_files()
+        time.sleep(600) # Check every 10 mins
+
+threading.Thread(target=run_scheduler, daemon=True).start()
 
 app = Flask(__name__)
 app.secret_key = 'abcde'
@@ -33,7 +66,7 @@ os.makedirs(LOG_DIR, exist_ok=True)
 @app.route('/', methods=['GET', 'POST'])
 def index():
     print(request.method)
-    summary_data = {}
+    summary_data = session.pop('summary_data', {})
 
     if request.method == 'POST':
         folder_path = request.form.get('folder_path')
@@ -293,6 +326,31 @@ def index():
                         
                         flash(f"✅ Scraping finished. Processed {result['total_processed']} URLs.", 'success')
                         summary_data['scrape_images'] = {'log_file': os.path.basename(log_file)}
+                        
+                        # Zip results
+                        if result.get('output_dir') and os.path.exists(result['output_dir']):
+                            # Check if we have files
+                            has_files = False
+                            for r, d, f in os.walk(result['output_dir']):
+                                if f:
+                                    has_files = True
+                                    break
+                            
+                            if has_files:
+                                zip_name = f"Scraped_Images_{int(time.time())}.zip"
+                                zip_path = os.path.join(TEMP_DIR, zip_name)
+                                # Zip the content of output_dir
+                                with zipfile.ZipFile(zip_path, 'w') as zipf:
+                                    for root, dirs, files in os.walk(result['output_dir']):
+                                        for file in files:
+                                            file_path = os.path.join(root, file)
+                                            # arcname should be relative to output dir
+                                            arcname = os.path.relpath(file_path, result['output_dir'])
+                                            zipf.write(file_path, arcname)
+                                summary_data['scrape_images']['download_link'] = zip_name
+                            else:
+                                if result['total_processed'] > 0:
+                                    flash("⚠️ Scraper ran but no images were saved (possibly too small or protected).", "warning")
 
                 except Exception as e:
                     flash(f'❌ Error in image scraper: {e}', 'danger')
@@ -304,10 +362,34 @@ def index():
                      result = asyncio.run(extract_text_task(folder_path, dry_run=is_dry_run, log_path=log_file))
                      flash(f"✅ OCR completed. Processed {result['processed']} images.", 'success')
                      summary_data['extract_text'] = {'log_file': os.path.basename(log_file)}
+                     
+                     # Handle Downloadable Result
+                     if result.get('generated_files'):
+                        files = result['generated_files']
+                        if len(files) == 1:
+                            # Single file: Copy to temp and serve
+                            src = files[0]
+                            filename = os.path.basename(src)
+                            dst = os.path.join(TEMP_DIR, filename)
+                            shutil.copy2(src, dst)
+                            summary_data['extract_text']['download_link'] = filename
+                        else:
+                            # Multiple files: Zip them
+                            zip_name = f"OCR_Results_{int(time.time())}.zip"
+                            zip_path = os.path.join(TEMP_DIR, zip_name)
+                            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                                for f in files:
+                                    zipf.write(f, os.path.basename(f))
+                            summary_data['extract_text']['download_link'] = zip_name
                 except EnvironmentError as e:
                     flash(f"❌ Dependency Error: {e}", 'danger')
                 except Exception as e:
                     flash(f"❌ Error in OCR: {e}", 'danger')
+
+                    flash(f"❌ Error in OCR: {e}", 'danger')
+
+        session['summary_data'] = summary_data
+        return redirect(url_for('index'))
 
     return render_template('index.html', summary_data=summary_data)
 
@@ -342,6 +424,31 @@ def download_log(logname):
         flash("❌ Log file not found.", "danger")
         return redirect(url_for('index'))
 
+
+@app.route('/download_file/<filename>')
+def download_file(filename):
+    """Serves files from the temp_downloads directory."""
+    try:
+        # Security: ensure file is in TEMP_DIR
+        safe_name = os.path.basename(filename)
+        return send_from_directory(TEMP_DIR, safe_name, as_attachment=True)
+    except Exception as e:
+        safe_name = os.path.basename(filename)
+        return send_from_directory(TEMP_DIR, safe_name, as_attachment=True)
+    except Exception as e:
+        return str(e), 404
+
+@app.route('/api/logs/delete/<logname>', methods=['DELETE'])
+def delete_log(logname):
+    try:
+        log_path = os.path.join(LOG_DIR, logname)
+        if os.path.exists(log_path):
+            os.remove(log_path)
+            return jsonify({'status': 'success', 'message': f'Deleted {logname}'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Log file not found'}), 404
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

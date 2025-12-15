@@ -79,7 +79,8 @@ async def scrape_static(url, output_base, logger):
         if logger:
             logger.info(f"Static Scrape starting for: {url}")
         
-        response = requests.get(url, timeout=10)
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+        response = requests.get(url, headers=headers, timeout=10)
         if response.status_code != 200:
             if logger:
                 logger.error(f"Failed to load page: {response.status_code}")
@@ -108,7 +109,8 @@ async def scrape_static(url, output_base, logger):
         os.makedirs(output_dir, exist_ok=True)
 
         # Download async
-        async with aiohttp.ClientSession() as session:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+        async with aiohttp.ClientSession(headers=headers) as session:
             tasks = [download_single_image(session, u, output_dir, logger) for u in image_urls]
             await asyncio.gather(*tasks)
 
@@ -177,7 +179,8 @@ async def scrape_dynamic(url, output_base, logger):
         output_dir = os.path.join(output_base, sub_path)
         os.makedirs(output_dir, exist_ok=True)
 
-        async with aiohttp.ClientSession() as session:
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+        async with aiohttp.ClientSession(headers=headers) as session:
             tasks = [download_single_image(session, u, output_dir, logger) for u in image_urls]
             await asyncio.gather(*tasks)
             
@@ -220,4 +223,5 @@ async def scrape_images_task(urls, folder_path, use_dynamic=False, log_path=None
                 logger.error(f"Failed to process URL {url}: {e}")
             results['errors'] += 1
             
+    results['output_dir'] = download_base
     return results

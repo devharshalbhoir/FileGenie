@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FileGenie Dashboard</title>
+  <!-- Favicon -->
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧞‍♂️</text></svg>">
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- FontAwesome for Icons -->
@@ -21,6 +24,20 @@
       --text-main: #ffffff;
       --text-muted: #a0aab5;
       --border-color: #3B4754;
+      --input-bg: #1a232b;
+      --input-border: #4A5663;
+      --input-focus-bg: #1a232b;
+    }
+
+    [data-theme="light"] {
+      --bg-dark: #f0f2f5;
+      --card-bg: #ffffff;
+      --accent: #e63964;
+      /* Keep accent same or adjust if needed */
+      --accent-hover: #d02752;
+      --text-main: #212529;
+      --text-muted: #6c757d;
+      --border-color: #dee2e6;
     }
 
     body {
@@ -39,6 +56,79 @@
     .app-header {
       margin-bottom: 40px;
       text-align: center;
+      position: relative;
+    }
+
+    .top-controls {
+      position: absolute;
+      top: 0;
+      right: 0;
+      display: flex;
+      gap: 10px;
+    }
+
+    .top-controls-left {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: flex;
+      gap: 10px;
+    }
+
+    .control-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .control-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .palette-container {
+      position: relative;
+    }
+
+    .color-options {
+      position: absolute;
+      top: 50px;
+      right: 0;
+      background: var(--card-bg);
+      padding: 10px;
+      border-radius: 8px;
+      display: none;
+      /* Hidden by default */
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      width: 120px;
+    }
+
+    .color-swatch {
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.2s;
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.1);
+      border-color: var(--accent);
     }
 
     .app-title {
@@ -102,18 +192,30 @@
     }
 
     .form-control {
-      background-color: #1a232b;
+      background-color: var(--input-bg);
       border: 1px solid var(--border-color);
       color: var(--text-main);
       padding: 12px;
       font-size: 1rem;
+      transition: background-color 0.3s, border-color 0.3s, color 0.3s;
     }
 
     .form-control:focus {
-      background-color: #1a232b;
+      background-color: var(--input-focus-bg);
       border-color: var(--accent);
       color: var(--text-main);
       box-shadow: 0 0 0 0.2rem rgba(230, 57, 100, 0.25);
+    }
+
+    /* Input Group Text (Buttons) */
+    .input-group-text {
+      background-color: var(--input-bg) !important;
+      border-color: var(--border-color) !important;
+      color: var(--text-muted) !important;
+    }
+
+    .input-group-text:hover {
+      color: var(--text-main) !important;
     }
 
     /* Checkboxes */
@@ -123,8 +225,8 @@
     }
 
     .form-check-input {
-      background-color: #1a232b;
-      border-color: #4A5663;
+      background-color: var(--input-bg);
+      border-color: var(--input-border);
       cursor: pointer;
     }
 
@@ -134,7 +236,7 @@
     }
 
     .form-check-label {
-      color: #e0e6ed;
+      color: var(--text-main);
       cursor: pointer;
       font-weight: 400;
       transition: color 0.2s;
@@ -231,6 +333,39 @@
 
   <div class="main-container">
     <div class="app-header">
+      <div class="top-controls-left">
+        <a class="control-btn" href="/" title="Refresh Session / Clear Cache">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </a>
+      </div>
+      <div class="top-controls">
+        <div class="palette-container">
+          <button class="control-btn" id="palette_btn" title="Change Background Color">
+            <i class="fa-solid fa-palette"></i>
+          </button>
+          <div class="color-options" id="color_options">
+            <!-- Pantone Serenity -->
+            <div class="color-swatch" style="background: #92A8D1;" data-color="#92A8D1" title="Serenity"></div>
+            <!-- Rose Quartz -->
+            <div class="color-swatch" style="background: #F7CAC9;" data-color="#F7CAC9" title="Rose Quartz"></div>
+            <!-- Classic Blue -->
+            <div class="color-swatch" style="background: #0F4C81;" data-color="#0F4C81" title="Classic Blue"></div>
+            <!-- Greenery -->
+            <div class="color-swatch" style="background: #88B04B;" data-color="#88B04B" title="Greenery"></div>
+            <!-- Living Coral -->
+            <div class="color-swatch" style="background: #FF6F61;" data-color="#FF6F61" title="Living Coral"></div>
+            <!-- Classic White -->
+            <div class="color-swatch" style="background: #f0f2f5;" data-color="#f0f2f5" title="Classic Light"></div>
+          </div>
+        </div>
+        <button class="control-btn" id="theme_toggle" title="Toggle Theme">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+        <button class="control-btn" id="view_logs_btn" title="View Session Logs" data-bs-toggle="modal"
+          data-bs-target="#logsModal">
+          <i class="fa-solid fa-list-ul"></i>
+        </button>
+      </div>
       <h1 class="app-title"><i class="fa-solid fa-wand-magic-sparkles"></i> FileGenie</h1>
       <p class="app-subtitle">Your intelligent file organization assistant</p>
     </div>
@@ -494,16 +629,57 @@
     </form>
 
     {% if summary_data %}
-    <div class="logs-container">
-      <h6><i class="fa-solid fa-file-lines me-2"></i> Operation Logs</h6>
+    <div class="logs-container fade show" id="operation_logs_container">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="m-0"><i class="fa-solid fa-file-lines me-2"></i> Operation Logs</h6>
+        <button type="button" class="btn-close" aria-label="Close"
+          onclick="document.getElementById('operation_logs_container').remove()"></button>
+      </div>
       {% for key, data in summary_data.items() %}
       <a class="log-link" href="{{ url_for('download_log', logname=data.log_file) }}">
         <i class="fa-solid fa-download"></i> Download log for <strong>{{ key }}</strong> ({{ data.log_file }})
       </a>
+      {% if data.download_link %}
+      <a class="log-link text-accent fw-bold" href="{{ url_for('download_file', filename=data.download_link) }}"
+        style="color: var(--accent);">
+        <i class="fa-solid fa-file-arrow-down"></i> Download Results ({{ data.download_link }})
+      </a>
+      {% endif %}
       {% endfor %}
     </div>
     {% endif %}
 
+  </div>
+
+  <!-- Logs Modal -->
+  <div class="modal fade" id="logsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content"
+        style="background-color: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color);">
+        <div class="modal-header" style="border-bottom: 1px solid var(--border-color);">
+          <h5 class="modal-title"><i class="fa-solid fa-clock-rotate-left me-2"></i>Recent Logs</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"
+            style="filter: invert(1) grayscale(100%) brightness(200%);"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-4 border-end" style="border-color: var(--border-color) !important;">
+              <div class="list-group list-group-flush" id="logs_list" style="max-height: 400px; overflow-y: auto;">
+                <div class="text-center text-muted p-3">Loading...</div>
+              </div>
+            </div>
+            <div class="col-8">
+              <pre id="log_content"
+                style="background: #1a232b; color: #a0aab5; padding: 15px; border-radius: 6px; height: 400px; overflow-y: auto; font-size: 0.85rem; border: 1px solid var(--border-color);">Select a log file to view details...</pre>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top: 1px solid var(--border-color);">
+          <small class="text-muted me-auto">Showing last 20 logs</small>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -583,6 +759,179 @@
         })
         .catch(error => console.error('Error selecting file:', error));
     });
+
+    // Theme Toggle Logic
+    const themeToggle = document.getElementById('theme_toggle');
+    const htmlEl = document.documentElement;
+    const bodyEl = document.body;
+
+    // Check local storage
+    if (localStorage.getItem('theme') === 'light') {
+      htmlEl.setAttribute('data-theme', 'light');
+      themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
+
+      // Restore custom background if exists
+      const savedColor = localStorage.getItem('lightModeBg');
+      if (savedColor) {
+        htmlEl.style.setProperty('--bg-dark', savedColor);
+      }
+    }
+
+    themeToggle.addEventListener('click', () => {
+      if (htmlEl.getAttribute('data-theme') === 'light') {
+        // Switch to Dark
+        htmlEl.removeAttribute('data-theme');
+        themeToggle.innerHTML = '<i class="fa-solid fa-moon"></i>';
+        localStorage.setItem('theme', 'dark');
+        htmlEl.style.removeProperty('--bg-dark'); // Reset override
+
+        // Fix modal close button filter for dark mode
+        document.querySelectorAll('.btn-close').forEach(btn => btn.style.filter = 'invert(1) grayscale(100%) brightness(200%)');
+      } else {
+        // Switch to Light
+        htmlEl.setAttribute('data-theme', 'light');
+        themeToggle.innerHTML = '<i class="fa-solid fa-sun"></i>';
+        localStorage.setItem('theme', 'light');
+
+        // Apply saved color
+        const savedColor = localStorage.getItem('lightModeBg');
+        if (savedColor) htmlEl.style.setProperty('--bg-dark', savedColor);
+
+        // Fix modal close button filter for light mode
+        document.querySelectorAll('.btn-close').forEach(btn => btn.style.filter = 'none');
+      }
+    });
+
+    // Palette Logic
+    const paletteBtn = document.getElementById('palette_btn');
+    const colorOptions = document.getElementById('color_options');
+
+    paletteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (colorOptions.style.display === 'grid') {
+        colorOptions.style.display = 'none';
+      } else {
+        colorOptions.style.display = 'grid';
+      }
+    });
+
+    document.querySelectorAll('.color-swatch').forEach(swatch => {
+      swatch.addEventListener('click', (e) => {
+        const color = e.target.getAttribute('data-color');
+
+        // Force Light Mode if not active
+        if (htmlEl.getAttribute('data-theme') !== 'light') {
+          themeToggle.click(); // Reuse toggle logic to switch state
+        }
+
+        htmlEl.style.setProperty('--bg-dark', color);
+        localStorage.setItem('lightModeBg', color);
+      });
+    });
+
+    // Close palette when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!paletteBtn.contains(e.target) && !colorOptions.contains(e.target)) {
+        colorOptions.style.display = 'none';
+      }
+    });
+
+    // Logs Viewer Logic
+    const logsModal = document.getElementById('logsModal');
+    logsModal.addEventListener('show.bs.modal', function () {
+      fetch('/api/logs')
+        .then(res => res.json())
+        .then(data => {
+          const list = document.getElementById('logs_list');
+          list.innerHTML = '';
+          if (data.logs && data.logs.length > 0) {
+            data.logs.forEach(log => {
+              // Create list item with delete button
+              const item = document.createElement('div');
+              item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+              item.style.cursor = 'pointer';
+              item.style.backgroundColor = 'transparent'; // will be set by JS
+              item.style.borderColor = 'var(--border-color)';
+              item.style.color = 'var(--text-main)';
+
+              const textSpan = document.createElement('div');
+              textSpan.style.maxWidth = '200px';
+              textSpan.style.overflow = 'hidden';
+              textSpan.style.textOverflow = 'ellipsis';
+              textSpan.innerText = log;
+
+              const btn = document.createElement('button');
+              btn.className = 'btn btn-sm btn-outline-danger border-0';
+              btn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+              btn.title = 'Delete Log';
+
+              // Event bubbling handling
+              item.onclick = (e) => {
+                if (e.target !== btn && !btn.contains(e.target)) {
+                  loadLogContent(log, item);
+                }
+              };
+
+              btn.onclick = (e) => deleteLog(log, e);
+
+              item.appendChild(textSpan);
+              item.appendChild(btn);
+              list.appendChild(item);
+            });
+            // Auto load first log
+            if (list.firstChild) loadLogContent(data.logs[0], list.firstChild);
+          } else {
+            list.innerHTML = '<div class="text-center text-muted p-2">No logs found</div>';
+          }
+        });
+    });
+
+    function loadLogContent(filename, element) {
+      // Highlight active
+      document.querySelectorAll('#logs_list .list-group-item').forEach(el => {
+        el.classList.remove('active');
+        el.style.backgroundColor = 'transparent';
+        el.style.color = 'var(--text-main)';
+      });
+      element.classList.add('active');
+      element.style.backgroundColor = 'var(--accent)';
+      element.style.color = '#fff';
+
+      document.getElementById('log_content').innerText = 'Loading content...';
+      fetch(`/api/logs/content/${filename}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('log_content').innerText = data.content || 'Empty log file';
+        })
+        .catch(err => {
+          document.getElementById('log_content').innerText = 'Error loading log: ' + err;
+        });
+    }
+
+    function deleteLog(logName, event) {
+      event.stopPropagation(); // Prevent clicking the item
+      if (!confirm(`Are you sure you want to delete ${logName}?`)) return;
+
+      fetch(`/api/logs/delete/${logName}`, { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            // Remove from UI
+            const btn = event.target.closest('button');
+            const item = btn.closest('.list-group-item');
+            item.remove();
+
+            // Clear content if it was showing this log
+            const contentPre = document.getElementById('log_content');
+            if (contentPre.innerText.includes('Loading') || contentPre.innerText.length > 0) {
+              contentPre.textContent = 'Select a log file to view details...';
+            }
+          } else {
+            alert('Failed to delete log: ' + data.message);
+          }
+        })
+        .catch(error => console.error('Error deleting log:', error));
+    }
   </script>
 </body>
 
