@@ -24,6 +24,9 @@ from scripts.move_worked_files_in_gitrepo import backup_git_work
 from scripts.media_organizer import organize_media
 from scripts.image_scraper import scrape_images_task
 from scripts.text_extractor import extract_text_task
+from scripts.move_hd_videos import find_and_move_hd_videos
+from scripts.video_analyzer import analyze_video_directory
+from scripts.video_filter import run_video_filtering
 
 
 class OperationService:
@@ -106,6 +109,24 @@ class OperationService:
             log_file = os.path.join(self.log_dir, f'height_log_{timestamp}.txt')
             result = asyncio.run(segregate_files_by_height(folder_path, dry_run=is_dry_run, log_path=log_file))
             msg = f"✅ Height Resolution-based segregation done. {result['moved_total']} moved."
+            return msg, {'log_file': os.path.basename(log_file)}
+
+        elif operation == 'move_hd_videos':
+            log_file = os.path.join(self.log_dir, f'hd_vids_log_{timestamp}.txt')
+            result = asyncio.run(find_and_move_hd_videos(folder_path, dry_run=is_dry_run, log_path=log_file))
+            msg = f"✅ HD Videos segregation completed. {result['moved_total']} moved."
+            return msg, {'log_file': os.path.basename(log_file)}
+
+        elif operation == 'video_analysis':
+            log_file = os.path.join(self.log_dir, f'video_analysis_log_{timestamp}.txt')
+            result = asyncio.run(analyze_video_directory(folder_path, dry_run=is_dry_run, log_path=log_file))
+            msg = f"✅ Video analysis completed. {result['moved_total']} high-density videos moved."
+            return msg, {'log_file': os.path.basename(log_file)}
+
+        elif operation == 'video_filtering':
+            log_file = os.path.join(self.log_dir, f'video_filter_log_{timestamp}.txt')
+            result = asyncio.run(run_video_filtering(folder_path, dry_run=is_dry_run, log_path=log_file))
+            msg = f"✅ Video filtering completed. {result['moved_total']} short high-density videos moved."
             return msg, {'log_file': os.path.basename(log_file)}
 
         # --- Images ---
