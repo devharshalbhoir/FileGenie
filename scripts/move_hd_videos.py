@@ -40,7 +40,7 @@ async def process_video(video_path, destination_folder, dry_run, executor, log_l
     # Check size first (faster than ffprobe)
     size_mb = os.path.getsize(video_path) / (1024 * 1024)
     
-    if size_mb <= 100:
+    if size_mb <= 70:
         log_lines.append(f"[Skipped] Video too small: {video_path} ({size_mb:.2f}MB)")
         return "skipped"
 

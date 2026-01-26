@@ -570,8 +570,48 @@
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="operations" value="compress_videos_in_folder"
                   id="compress_videos_in_folder">
-                <label class="form-check-label" for="compress_videos_in_folder">Compress Videos</label>
+                <label class="form-check-label" for="compress_videos_in_folder">Compress Videos (Simple)</label>
               </div>
+
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="operations" value="compress_videos_advanced"
+                  id="compress_videos_advanced" onclick="toggleCompressorInputs()">
+                <label class="form-check-label fw-bold" for="compress_videos_advanced">Advanced Compressor
+                  (480p)</label>
+              </div>
+              <div id="compressor_inputs" class="sub-options" style="display: none;">
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label text-muted small mb-1">PRESET:</label>
+                    <select class="form-select form-select-sm" name="video_preset">
+                      <option value="ultrafast">Ultrafast</option>
+                      <option value="superfast">Superfast</option>
+                      <option value="veryfast" selected>Veryfast</option>
+                      <option value="faster">Faster</option>
+                      <option value="fast">Fast</option>
+                      <option value="medium">Medium</option>
+                      <option value="slow">Slow</option>
+                      <option value="slower">Slower</option>
+                      <option value="veryslow">Veryslow</option>
+                    </select>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label text-muted small mb-1">CRF (Quality):</label>
+                    <input type="number" class="form-control form-control-sm" name="video_crf" value="29" min="18"
+                      max="51" title="Lower is better quality, higher size. 18-28 is standard.">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label text-muted small mb-1">MAX BITRATE:</label>
+                    <input type="text" class="form-control form-control-sm" name="video_bitrate" value="800k">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label text-muted small mb-1">THREADS:</label>
+                    <input type="number" class="form-control form-control-sm" name="video_threads" value="0" min="0"
+                      title="0 for auto">
+                  </div>
+                </div>
+              </div>
+
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="operations" value="move_long_videos"
                   id="move_long_videos">
@@ -587,21 +627,7 @@
                   id="segregate_files_by_height">
                 <label class="form-check-label" for="segregate_files_by_height">By Height (e.g., 1080p)</label>
               </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="operations" value="move_hd_videos"
-                  id="move_hd_videos">
-                <label class="form-check-label" for="move_hd_videos">Move HD Videos (<10m,>100MB)</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="operations" value="video_analysis"
-                  id="video_analysis">
-                <label class="form-check-label fw-bold" for="video_analysis">Video Analysis (Short HD)</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="operations" value="video_filtering"
-                  id="video_filtering">
-                <label class="form-check-label fw-bold" for="video_filtering">Video Filtering (Short HD v2)</label>
-              </div>
+
             </div>
           </div>
         </div>
@@ -759,6 +785,16 @@
     function toggleScraperInputs() {
       const checkbox = document.getElementById('scrape_images');
       const container = document.getElementById('scraper_inputs');
+      if (checkbox.checked) {
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
+    function toggleCompressorInputs() {
+      const checkbox = document.getElementById('compress_videos_advanced');
+      const container = document.getElementById('compressor_inputs');
       if (checkbox.checked) {
         container.style.display = 'block';
       } else {

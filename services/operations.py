@@ -4,6 +4,7 @@ import time
 import zipfile
 import shutil
 from datetime import datetime
+from scripts.advanced_video_compressor import VideoCompressionConfig, process_videos
 
 # Script Imports
 from scripts.compress_videos_in_folder import compress_videos_in_folder
@@ -24,9 +25,7 @@ from scripts.move_worked_files_in_gitrepo import backup_git_work
 from scripts.media_organizer import organize_media
 from scripts.image_scraper import scrape_images_task
 from scripts.text_extractor import extract_text_task
-from scripts.move_hd_videos import find_and_move_hd_videos
-from scripts.video_analyzer import analyze_video_directory
-from scripts.video_filter import run_video_filtering
+
 
 
 class OperationService:
@@ -94,6 +93,29 @@ class OperationService:
             asyncio.run(compress_videos_in_folder(folder_path)) 
             return f"✅ Compressed videos done.", {'log_file': os.path.basename(log_file)}
 
+        elif operation == 'compress_videos_advanced':
+            log_file = os.path.join(self.log_dir, f'adv_compress_video_log_{timestamp}.txt')
+            
+            # Extract config
+            crf = int(form_data.get('video_crf', 29))
+            preset = form_data.get('video_preset', 'veryfast')
+            bitrate = form_data.get('video_bitrate', '800k')
+            threads = int(form_data.get('video_threads', 0))
+            
+            # Create Config
+            config = VideoCompressionConfig(
+                directory=folder_path,
+                dry_run=is_dry_run,
+                threads=threads,
+                crf=crf,
+                preset=preset,
+                max_bitrate=bitrate,
+                scale_height=480 # Hardcoded to 480p as per script logic, or extract if we add UI for it
+            )
+            
+            count = process_videos(config, log_path=log_file)
+            return f"✅ Advanced compression done. {count} videos processed.", {'log_file': os.path.basename(log_file)}
+
         elif operation == 'move_long_videos':
             log_file = os.path.join(self.log_dir, f'video_log_{timestamp}.txt')
             asyncio.run(find_and_move_long_videos(folder_path, dry_run=is_dry_run, log_path=log_file))
@@ -111,23 +133,7 @@ class OperationService:
             msg = f"✅ Height Resolution-based segregation done. {result['moved_total']} moved."
             return msg, {'log_file': os.path.basename(log_file)}
 
-        elif operation == 'move_hd_videos':
-            log_file = os.path.join(self.log_dir, f'hd_vids_log_{timestamp}.txt')
-            result = asyncio.run(find_and_move_hd_videos(folder_path, dry_run=is_dry_run, log_path=log_file))
-            msg = f"✅ HD Videos segregation completed. {result['moved_total']} moved."
-            return msg, {'log_file': os.path.basename(log_file)}
 
-        elif operation == 'video_analysis':
-            log_file = os.path.join(self.log_dir, f'video_analysis_log_{timestamp}.txt')
-            result = asyncio.run(analyze_video_directory(folder_path, dry_run=is_dry_run, log_path=log_file))
-            msg = f"✅ Video analysis completed. {result['moved_total']} high-density videos moved."
-            return msg, {'log_file': os.path.basename(log_file)}
-
-        elif operation == 'video_filtering':
-            log_file = os.path.join(self.log_dir, f'video_filter_log_{timestamp}.txt')
-            result = asyncio.run(run_video_filtering(folder_path, dry_run=is_dry_run, log_path=log_file))
-            msg = f"✅ Video filtering completed. {result['moved_total']} short high-density videos moved."
-            return msg, {'log_file': os.path.basename(log_file)}
 
         # --- Images ---
         elif operation == 'compress_images':
